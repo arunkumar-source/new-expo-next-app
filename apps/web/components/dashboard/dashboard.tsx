@@ -8,11 +8,11 @@ import { Card } from "@workspace/ui/components/card"
 import { Badge } from "@workspace/ui/components/badge"
 
 import { XAxis, YAxis, PieChart, Pie, Cell, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,LineChart, Line, Radar } from "recharts"
-import { useWorks } from "@/hooks/use-openapi-query"
+import { $api } from "@/lib/api-client"
 import { getStatusData, getDateData } from "@/lib/dashdata"
 
 export default function Dashboard() {
-  const { data: works = [], isLoading, error } = useWorks()
+  const { data: works = [], isLoading, error } =$api.useQuery('get','/api')
 
   const status = getStatusData(works)
   const dateData = getDateData(works)
@@ -101,7 +101,7 @@ export default function Dashboard() {
         <h1 className="text-2xl font-semibold">Dashboard</h1>
 
         {isLoading && <p>Loading...</p>}
-        {error && <p className="text-red-500">Error: {error.message}</p>}
+        {error && <p className="text-red-500">Error: {error}</p>}
 
         {/* STATS */}
         <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4">

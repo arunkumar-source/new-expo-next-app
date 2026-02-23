@@ -29,8 +29,7 @@ export default function WorkListScreen() {
         style: "destructive",
         onPress: async () => {
           try {
-            // Pass id as path parameter
-            await deleteWork.mutateAsync({ params: { path: { id } } });
+           await deleteWork.mutateAsync({ params: { path: { id } } });
             worksQuery.refetch();
           } catch (err) {
             console.error("Delete error:", err);
@@ -42,7 +41,7 @@ export default function WorkListScreen() {
   };
 
   const handleEdit = (work: Work) => {
-    // Navigate to add-work screen with work data for editing
+
     router.push({
       pathname: "/(tabs)/add-work",
       params: { 
