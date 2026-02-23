@@ -49,15 +49,11 @@ export function EditWorkSheet({
       endDate: datePart,
       endTime: timePart,
     })
-    
-    // Update controlled time state when work prop changes
     if (timePart) {
       setEndTime(timePart)
     }
-    
-    // Update controlled time state when date changes
     if (datePart) {
-      // If date changes but no time, clear the time state
+      
       if (!work.endDate || !work.endDate.includes('T')) {
         setEndTime("")
       }

@@ -17,69 +17,82 @@ export default function Dashboard() {
   const status = getStatusData(works)
   const dateData = getDateData(works)
 
-  // Calculate status over time data for line chart
+  // Calculate status over time data for line chart based on end dates
   const getStatusOverTimeData = () => {
     type StatusMap = { [key: string]: { todo: number; 'in-progress': number; done: number; backlog: number; cancelled: number } }
     const statusMap: StatusMap = {}
-    const sortedDates: string[] = []
+    const dateSet = new Set<string>()
 
-    // First, collect all relevant dates and sort them
+    // Add current date to always show from today onwards
+    const today = new Date().toISOString().split('T')[0]
+    if (today) {
+      dateSet.add(today)
+    }
+
+    // Collect all end dates and current date for tasks without end dates
     works.forEach(work => {
-      let date: string
-      if (work.status === 'done' && work.endDate) {
-        date = new Date(work.endDate).toLocaleDateString()
+      let date: Date | null = null
+      
+      // Use end date if available, otherwise use creation date
+      if (work.endDate) {
+        date = new Date(work.endDate)
       } else if (work.createdAt) {
-        date = new Date(work.createdAt).toLocaleDateString()
-      } else {
-        return // Skip if no relevant date is available
+        date = new Date(work.createdAt)
       }
       
-      if (!sortedDates.includes(date)) {
-        sortedDates.push(date)
+      if (date && !isNaN(date.getTime())) {
+        const dateStr = date.toISOString().split('T')[0] // YYYY-MM-DD format
+        if (dateStr) {
+          dateSet.add(dateStr)
+        }
       }
     })
 
-    // Sort dates chronologically
-    sortedDates.sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+    // Sort dates chronologically and create entries
+    const sortedDates = Array.from(dateSet).sort()
 
-    // Calculate cumulative counts for each date
-    sortedDates.forEach((currentDate, index) => {
-      const counts = {
+    // Initialize status map with zero counts for all dates
+    sortedDates.forEach(date => {
+      statusMap[date] = {
         todo: 0,
         'in-progress': 0,
         done: 0,
         backlog: 0,
         cancelled: 0
       }
-
-      // Count all works that should be included up to this date
-      works.forEach(work => {
-        let workDate: string
-        if (work.status === 'done' && work.endDate) {
-          workDate = new Date(work.endDate).toLocaleDateString()
-        } else if (work.createdAt) {
-          workDate = new Date(work.createdAt).toLocaleDateString()
-        } else {
-          return
-        }
-
-        // Include this work if its date is on or before the current date
-        if (new Date(workDate).getTime() <= new Date(currentDate).getTime()) {
-          if (work.status && work.status in counts) {
-            counts[work.status as keyof typeof counts]++
-          }
-        }
-      })
-
-      statusMap[currentDate] = counts
     })
 
-    return Object.keys(statusMap)
-      .map(date => ({
-        date,
-        ...statusMap[date]
-      }))
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    // Count tasks by their end date (or creation date if no end date)
+    works.forEach(work => {
+      let targetDate: Date | null = null
+      
+      // Use end date if available, otherwise use creation date
+      if (work.endDate) {
+        targetDate = new Date(work.endDate)
+      } else if (work.createdAt) {
+        targetDate = new Date(work.createdAt)
+      }
+      
+      if (!targetDate || isNaN(targetDate.getTime())) return
+      
+      const dateStr = targetDate.toISOString().split('T')[0]
+      if (!dateStr) return
+      
+      // Only add the task to its specific end date (not cumulative)
+      if (statusMap[dateStr] && work.status && work.status in statusMap[dateStr]) {
+        statusMap[dateStr][work.status as keyof typeof statusMap[string]]++
+      }
+    })
+
+    // Convert to chart data format with formatted dates
+    return sortedDates.map(date => ({
+      date: new Date(date).toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        year: 'numeric'
+      }),
+      ...statusMap[date]
+    }))
   }
 
   // Calculate additional metrics
@@ -218,9 +231,24 @@ export default function Dashboard() {
                   <div>
                     <p className="font-medium">{w.title}</p>
                     <p className="text-xs text-gray-600">
-                      {w.createdAt
-                        ? new Date(w.createdAt).toLocaleString()
-                        : "—"}
+                      {w.endDate
+                        ? `Due: ${new Date(w.endDate).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}`
+                        : w.createdAt
+                        ? `Created: ${new Date(w.createdAt).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}`
+                        : "No date"
+                      }
                     </p>
                   </div>
                   <Badge className="bg-yellow-500 text-white">{w.status}</Badge>
@@ -244,9 +272,24 @@ export default function Dashboard() {
                   <div>
                     <p className="font-medium">{w.title}</p>
                     <p className="text-xs text-gray-600">
-                      {w.createdAt
-                        ? new Date(w.createdAt).toLocaleString()
-                        : "—"}
+                      {w.endDate
+                        ? `Due: ${new Date(w.endDate).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}`
+                        : w.createdAt
+                        ? `Created: ${new Date(w.createdAt).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}`
+                        : "No date"
+                      }
                     </p>
                   </div>
                   <Badge className="bg-blue-500 text-white">{w.status}</Badge>
@@ -270,9 +313,24 @@ export default function Dashboard() {
                   <div>
                     <p className="font-medium">{w.title}</p>
                     <p className="text-xs text-gray-600">
-                      {w.createdAt
-                        ? new Date(w.createdAt).toLocaleString()
-                        : "—"}
+                      {w.endDate
+                        ? `Due: ${new Date(w.endDate).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}`
+                        : w.createdAt
+                        ? `Created: ${new Date(w.createdAt).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}`
+                        : "No date"
+                      }
                     </p>
                   </div>
                   <Badge className="bg-green-500 text-white">{w.status}</Badge>
@@ -296,9 +354,24 @@ export default function Dashboard() {
                   <div>
                     <p className="font-medium">{w.title}</p>
                     <p className="text-xs text-gray-600">
-                      {w.createdAt
-                        ? new Date(w.createdAt).toLocaleString()
-                        : "—"}
+                      {w.endDate
+                        ? `Due: ${new Date(w.endDate).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}`
+                        : w.createdAt
+                        ? `Created: ${new Date(w.createdAt).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}`
+                        : "No date"
+                      }
                     </p>
                   </div>
                   <Badge className="bg-gray-500 text-white">{w.status}</Badge>
@@ -322,9 +395,24 @@ export default function Dashboard() {
                   <div>
                     <p className="font-medium">{w.title}</p>
                     <p className="text-xs text-gray-600">
-                      {w.createdAt
-                        ? new Date(w.createdAt).toLocaleString()
-                        : "—"}
+                      {w.endDate
+                        ? `Due: ${new Date(w.endDate).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}`
+                        : w.createdAt
+                        ? `Created: ${new Date(w.createdAt).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}`
+                        : "No date"
+                      }
                     </p>
                   </div>
                   <Badge className="bg-red-500 text-white">{w.status}</Badge>

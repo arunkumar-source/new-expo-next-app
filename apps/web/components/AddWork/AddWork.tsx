@@ -16,7 +16,6 @@ import { useForm } from "react-hook-form"
 import type { WorkStatus } from "@repo/shared"
 import { $api } from "@/lib/api-client"
 import { useQueryClient } from "@tanstack/react-query"
-import { useEffect, useState } from "react"
 
 interface AddWorkProps {
   open: boolean
@@ -34,11 +33,6 @@ type FormValues = {
 export function AddWork({ open, onOpenChange }: AddWorkProps) {
   const queryClient = useQueryClient()
   const createWork = $api.useMutation('post','/api/add')
-  const [isMounted, setIsMounted] = useState(false)
-  
-  useEffect(() => {
-    setIsMounted(true)
-  }, [])
   
   const form = useForm<FormValues>({
     defaultValues: {
@@ -77,9 +71,9 @@ export function AddWork({ open, onOpenChange }: AddWorkProps) {
   })
 
   return (
-    <Dialog open={isMounted ? open : false} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button className="bg-black text-white hover:bg-black/80" suppressHydrationWarning>
+        <Button className="bg-black text-white hover:bg-black/80">
           Add Work
         </Button>
       </DialogTrigger>
