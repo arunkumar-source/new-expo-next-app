@@ -3,7 +3,7 @@ import { useRouter, Stack } from "expo-router";
 import { useEffect } from "react";
 import { View, Text, ActivityIndicator } from "react-native";
 
-export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
+export default function giProtectedLayout({ children }: { children: React.ReactNode }) {
   const { data: session, isPending } = useSession();
   const router = useRouter();
 

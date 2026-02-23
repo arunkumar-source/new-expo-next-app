@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { $api } from "@/lib/api-client";
-import type { Work } from "@repo/shared";
+
 
 export default function DashboardScreen() {
   const { data: works = [], isLoading, error } = $api.useQuery("get", "/api");
