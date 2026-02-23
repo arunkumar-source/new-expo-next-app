@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Platform } from "react-native";
 import { useForm, Controller } from "react-hook-form";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -34,15 +34,28 @@ export default function AddWorkScreen() {
   const createWork = $api.useMutation("post", "/api/add");
   const updateWork = $api.useMutation("patch", "/api/update/{id}");
 
-  const { control, handleSubmit, reset, formState } = useForm<FormValues>({
-    defaultValues: {
-      title: isEditMode ? params.title || "" : "",
-      description: isEditMode ? params.description || "" : "",
-      status: isEditMode ? params.status || "todo" : "todo",
-      endDate: isEditMode && params.endDate ? new Date(params.endDate) : null,
-      endTime: null,
-    },
-  });
+  const { control, handleSubmit, reset, formState } = useForm<FormValues>();
+
+  // Reset form when edit mode or params change
+  useEffect(() => {
+    if (isEditMode) {
+      reset({
+        title: params.title || "",
+        description: params.description || "",
+        status: params.status || "todo",
+        endDate: params.endDate ? new Date(params.endDate) : null,
+        endTime: null,
+      });
+    } else {
+      reset({
+        title: "",
+        description: "",
+        status: "todo",
+        endDate: null,
+        endTime: null,
+      });
+    }
+  }, [isEditMode, params.title, params.description, params.status, params.endDate, reset]);
 
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -69,7 +82,6 @@ export default function AddWorkScreen() {
           },
         });
         
-        // Invalidate the cache to refresh the list
         queryClient.invalidateQueries({ queryKey: ["get", "/api"] });
         
         reset();
@@ -78,8 +90,7 @@ export default function AddWorkScreen() {
           router.push('/(tabs)/list-works');
         }, 1000);
       } else {
-        // Create new work
-        await createWork.mutateAsync({
+      await createWork.mutateAsync({
           body: {
             title: data.title,
             description: data.description,
@@ -91,12 +102,12 @@ export default function AddWorkScreen() {
         
         queryClient.invalidateQueries({ queryKey: ["get", "/api"] });
         
-        reset();
         alert("Work added successfully!");
         
         setTimeout(() => {
-          router.back();
+          router.push('/(tabs)/list-works');
         }, 1000);
+        reset();
       }
     } catch (err) {
       console.error(err);

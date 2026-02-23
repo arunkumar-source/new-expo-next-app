@@ -68,7 +68,7 @@ export function KanbanBoard() {
             path: { id: work.id },
           },
           body: {
-            status: newStatus, // ✅ matches OpenAPI enum
+            status: newStatus,
           },
         },
         {

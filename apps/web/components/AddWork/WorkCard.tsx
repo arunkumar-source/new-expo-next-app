@@ -8,8 +8,10 @@ import { Badge } from "@workspace/ui/components/badge"
 import { type Work } from "@repo/shared"
 import { EditWorkSheet } from "./editSheet"
 import { $api} from "@/lib/api-client"
+import { useQueryClient } from "@tanstack/react-query"
 
 export function WorkCard({ work, index, isUpdating = false }: { work: Work; index: number; isUpdating?: boolean }) {
+  const queryClient = useQueryClient()
   const deleteMutation = $api.useMutation("delete", "/api/delete/{id}")
   const updateMutation = $api.useMutation("patch", "/api/update/{id}")
 
@@ -137,7 +139,7 @@ export function WorkCard({ work, index, isUpdating = false }: { work: Work; inde
                         size="sm"
                         className="h-5 w-5 p-0 hover:bg-orange-50 text-gray-400 hover:text-orange-600"
                         disabled={updateMutation.isPending}
-                        onClick={() =>
+                        onClick={() => {
                               updateMutation.mutate({
                                 params: {
                                   path: { id: work.id },
@@ -145,9 +147,13 @@ export function WorkCard({ work, index, isUpdating = false }: { work: Work; inde
                                 body: {
                                   status: "cancelled",
                                 },
+                              }, {
+                                onSuccess: () => {
+                                  queryClient.invalidateQueries({ queryKey: ["get", "/api"] })
+                                }
                               })
                             }
-                      >
+                          }>
                         ❌
                       </Button>
                     ) : (
@@ -157,14 +163,18 @@ export function WorkCard({ work, index, isUpdating = false }: { work: Work; inde
                         size="sm"
                         className="h-5 w-5 p-0 hover:bg-red-50 text-gray-400 hover:text-red-500"
                         disabled={deleteMutation.isPending}
-                        onClick={() =>
+                        onClick={() => {
                                   deleteMutation.mutate({
                                     params: {
                                       path: { id: work.id },
                                     },
+                                  }, {
+                                    onSuccess: () => {
+                                      queryClient.invalidateQueries({ queryKey: ["get", "/api"] })
+                                    }
                                   })
                                 }
-                      >
+                              }>
                         🗑️
                       </Button>
                     )}

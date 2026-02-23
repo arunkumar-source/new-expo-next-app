@@ -15,6 +15,8 @@ import { Button } from "@workspace/ui/components/button"
 import { useForm } from "react-hook-form"
 import type { WorkStatus } from "@repo/shared"
 import { $api } from "@/lib/api-client"
+import { useQueryClient } from "@tanstack/react-query"
+import { useEffect, useState } from "react"
 
 interface AddWorkProps {
   open: boolean
@@ -30,7 +32,13 @@ type FormValues = {
 }
 
 export function AddWork({ open, onOpenChange }: AddWorkProps) {
+  const queryClient = useQueryClient()
   const createWork = $api.useMutation('post','/api/add')
+  const [isMounted, setIsMounted] = useState(false)
+  
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
   
   const form = useForm<FormValues>({
     defaultValues: {
@@ -57,6 +65,10 @@ export function AddWork({ open, onOpenChange }: AddWorkProps) {
           endDate,
         }
       })
+      
+      // Invalidate cache to refetch the works list
+      queryClient.invalidateQueries({ queryKey: ["get", "/api"] })
+      
       form.reset()
       onOpenChange(false)
     } catch (error) {
@@ -65,9 +77,9 @@ export function AddWork({ open, onOpenChange }: AddWorkProps) {
   })
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={isMounted ? open : false} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button className="bg-black text-white hover:bg-black/80">
+        <Button className="bg-black text-white hover:bg-black/80" suppressHydrationWarning>
           Add Work
         </Button>
       </DialogTrigger>

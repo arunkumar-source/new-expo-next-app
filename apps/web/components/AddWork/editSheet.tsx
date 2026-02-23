@@ -10,11 +10,11 @@ import {
 } from "@workspace/ui/components/sheet"
 import { Button } from "@workspace/ui/components/button"
 import {Input} from "@workspace/ui/components/input"
-
 import { useForm } from "react-hook-form"
 import { $api } from "@/lib/api-client"
 import {type Work} from "@repo/shared"
 import { useEffect, useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 
 export function EditWorkSheet({
   work,
@@ -23,10 +23,11 @@ export function EditWorkSheet({
   work: Work
   children: React.ReactNode
 }) {
+  const queryClient = useQueryClient()
   const { mutate: updateWork } = $api.useMutation("patch", "/api/update/{id}")
   const [endTime, setEndTime] = useState("")
 
-  const { register, handleSubmit, formState, watch, setValue, reset } = useForm({
+  const { register, handleSubmit, formState,reset } = useForm({
     defaultValues: {
       title: work.title,
       description: work.description,
@@ -96,7 +97,12 @@ export function EditWorkSheet({
                     status: data.status,
                     endDate: finalEndDate,
                   },
-      })
+                }, {
+                  onSuccess: () => {
+                    queryClient.invalidateQueries({ queryKey: ["get", "/api"] })
+                  }
+                }
+      )
     } catch (error) {
       console.error("Error updating work:", error)
     }
