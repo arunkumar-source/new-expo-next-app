@@ -1,12 +1,10 @@
 import React from "react";
-import { View, Text, ScrollView, StyleSheet } from "react-native";
+import { View, Text, ScrollView } from "react-native";
 import { $api } from "@/lib/api-client";
-
 
 export default function DashboardScreen() {
   const { data: works = [], isLoading, error } = $api.useQuery("get", "/api");
 
-  // Calculate status counts and percentages
   const getStatusData = () => {
     const total = works.length;
     if (total === 0) {
@@ -39,17 +37,34 @@ export default function DashboardScreen() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "todo":
-        return "#EAB308"; // Yellow
+        return "bg-yellow-500";
       case "in-progress":
-        return "#3B82F6"; // Blue
+        return "bg-blue-500";
       case "done":
-        return "#10B981"; // Green
+        return "bg-green-500";
       case "backlog":
-        return "#6B7280"; // Gray
+        return "bg-gray-500";
       case "cancelled":
-        return "#EF4444"; // Red
+        return "bg-red-500";
       default:
-        return "#000000"; // Black
+        return "bg-black";
+    }
+  };
+
+  const getBorderColor = (status: string) => {
+    switch (status) {
+      case "todo":
+        return "border-yellow-500";
+      case "in-progress":
+        return "border-blue-500";
+      case "done":
+        return "border-green-500";
+      case "backlog":
+        return "border-gray-500";
+      case "cancelled":
+        return "border-red-500";
+      default:
+        return "border-black";
     }
   };
 
@@ -72,49 +87,72 @@ export default function DashboardScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.loadingText}>Loading dashboard...</Text>
+      <View className="flex-1 bg-gray-100 justify-center">
+        <Text className="text-center text-gray-500 text-base">
+          Loading dashboard...
+        </Text>
       </View>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>Error loading data</Text>
+      <View className="flex-1 bg-gray-100 justify-center">
+        <Text className="text-center text-red-500 text-base">
+          Error loading data
+        </Text>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      <Text style={styles.title}>Dashboard</Text>
-      <Text style={styles.subtitle}>Work Status Overview</Text>
+    <ScrollView
+      className="flex-1 bg-gray-100"
+      contentContainerStyle={{ padding: 16 }}
+    >
+      <Text className="text-3xl font-bold text-gray-800 mb-2">
+        Dashboard
+      </Text>
+      <Text className="text-gray-500 text-base mb-6">
+        Work Status Overview
+      </Text>
 
       {/* Total Tasks */}
-      <View style={styles.totalCard}>
-        <Text style={styles.totalLabel}>Total Tasks</Text>
-        <Text style={styles.totalNumber}>{works.length}</Text>
+      <View className="bg-white rounded-xl p-5 mb-6 items-center shadow-md">
+        <Text className="text-gray-500 text-base mb-2">
+          Total Tasks
+        </Text>
+        <Text className="text-4xl font-bold text-gray-800">
+          {works.length}
+        </Text>
       </View>
 
       {/* Status Cards */}
-      <View style={styles.statusGrid}>
+      <View className="space-y-3 mb-6">
         {Object.entries(statusData).map(([status, data]) => (
-          <View key={status} style={[styles.statusCard, { borderLeftColor: getStatusColor(status) }]}>
-            <Text style={styles.statusTitle}>{getStatusTitle(status)}</Text>
-            <Text style={styles.statusCount}>{data.count}</Text>
-            <Text style={styles.statusPercentage}>{data.percentage.toFixed(1)}%</Text>
-            
+          <View
+            key={status}
+            className={`bg-white rounded-xl p-4 border-l-4 shadow-md ${getBorderColor(
+              status
+            )}`}
+          >
+            <Text className="text-sm font-semibold text-gray-800 mb-1">
+              {getStatusTitle(status)}
+            </Text>
+
+            <Text className="text-2xl font-bold text-gray-800">
+              {data.count}
+            </Text>
+
+            <Text className="text-xs text-gray-500 mb-2">
+              {data.percentage.toFixed(1)}%
+            </Text>
+
             {/* Progress Bar */}
-            <View style={styles.progressBar}>
-              <View 
-                style={[
-                  styles.progressFill, 
-                  { 
-                    width: `${data.percentage}%`,
-                    backgroundColor: getStatusColor(status)
-                  }
-                ]} 
+            <View className="h-1.5 bg-gray-200 rounded overflow-hidden">
+              <View
+                className={`h-full rounded ${getStatusColor(status)}`}
+                style={{ width: `${data.percentage}%` }}
               />
             </View>
           </View>
@@ -122,188 +160,55 @@ export default function DashboardScreen() {
       </View>
 
       {/* Recent Tasks */}
-      <View style={styles.recentSection}>
-        <Text style={styles.sectionTitle}>Recent Tasks</Text>
+      <View className="mb-6">
+        <Text className="text-lg font-semibold text-gray-800 mb-4">
+          Recent Tasks
+        </Text>
+
         {works.slice(0, 5).map((work) => (
-          <View key={work.id} style={styles.taskItem}>
-            <View style={styles.taskHeader}>
-              <Text style={styles.taskTitle}>{work.title}</Text>
-              <View style={[styles.statusBadge, { backgroundColor: getStatusColor(work.status) }]}>
-                <Text style={styles.statusBadgeText}>{getStatusTitle(work.status)}</Text>
+          <View
+            key={work.id}
+            className="bg-white rounded-xl p-4 mb-3 shadow-md"
+          >
+            <View className="flex-row justify-between items-center mb-2">
+              <Text className="text-base font-semibold text-gray-800 flex-1 mr-3">
+                {work.title}
+              </Text>
+
+              <View
+                className={`px-2 py-1 rounded-full ${getStatusColor(
+                  work.status
+                )}`}
+              >
+                <Text className="text-[10px] font-medium text-white">
+                  {getStatusTitle(work.status)}
+                </Text>
               </View>
             </View>
-            <Text style={styles.taskDescription} numberOfLines={2}>
+
+            <Text
+              className="text-sm text-gray-500 mb-2 leading-5"
+              numberOfLines={2}
+            >
               {work.description}
             </Text>
-            <Text style={styles.taskDate}>
+
+            <Text className="text-xs text-gray-400">
               {work.endDate
                 ? `Due: ${new Date(work.endDate).toLocaleDateString()}`
                 : work.createdAt
                 ? `Created: ${new Date(work.createdAt).toLocaleDateString()}`
-                : "No date"
-              }
+                : "No date"}
             </Text>
           </View>
         ))}
+
         {works.length === 0 && (
-          <Text style={styles.noTasksText}>No tasks found</Text>
+          <Text className="text-center text-base text-gray-500 italic">
+            No tasks found
+          </Text>
         )}
       </View>
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-  },
-  contentContainer: {
-    padding: 16,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 8,
-    color: "#1f2937",
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "#6b7280",
-    marginBottom: 24,
-  },
-  loadingText: {
-    textAlign: "center",
-    fontSize: 16,
-    color: "#6b7280",
-  },
-  errorText: {
-    textAlign: "center",
-    fontSize: 16,
-    color: "#ef4444",
-  },
-  totalCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 24,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  totalLabel: {
-    fontSize: 16,
-    color: "#6b7280",
-    marginBottom: 8,
-  },
-  totalNumber: {
-    fontSize: 36,
-    fontWeight: "bold",
-    color: "#1f2937",
-  },
-  statusGrid: {
-    flexDirection: "column",
-    gap: 12,
-    marginBottom: 24,
-  },
-  statusCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: 12,
-    padding: 16,
-    borderLeftWidth: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  statusTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#1f2937",
-    marginBottom: 4,
-  },
-  statusCount: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#1f2937",
-    marginBottom: 4,
-  },
-  statusPercentage: {
-    fontSize: 12,
-    color: "#6b7280",
-    marginBottom: 8,
-  },
-  progressBar: {
-    height: 6,
-    backgroundColor: "#e5e7eb",
-    borderRadius: 3,
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: "100%",
-    borderRadius: 3,
-  },
-  recentSection: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#1f2937",
-    marginBottom: 16,
-  },
-  taskItem: {
-    backgroundColor: "#ffffff",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  taskHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  taskTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1f2937",
-    flex: 1,
-    marginRight: 12,
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  statusBadgeText: {
-    fontSize: 10,
-    fontWeight: "500",
-    color: "#ffffff",
-  },
-  taskDescription: {
-    fontSize: 14,
-    color: "#6b7280",
-    marginBottom: 8,
-    lineHeight: 20,
-  },
-  taskDate: {
-    fontSize: 12,
-    color: "#9ca3af",
-  },
-  noTasksText: {
-    textAlign: "center",
-    fontSize: 16,
-    color: "#6b7280",
-    fontStyle: "italic",
-  },
-});

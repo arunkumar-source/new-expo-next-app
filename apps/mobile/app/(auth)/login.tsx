@@ -47,7 +47,7 @@ export default function LoginScreen() {
       } else {
         console.warn('No token in login result to store');
       }
-      // Only proceed if authentication was successful
+     
       route.push("/(tabs)/list-works");
       alert("Logged in!");
     } catch (err) {
