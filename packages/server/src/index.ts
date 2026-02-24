@@ -2,7 +2,7 @@
 // import { sign} from "hono/jwt";
 // import { adminMiddleware } from "./adminMiddleware";
 import { logger } from "hono/logger";
-import { serve } from "@hono/node-server";
+// import { serve } from "@hono/node-server";
 import { validator, describeRoute, resolver,openAPIRouteHandler  } from "hono-openapi";
 import { Scalar } from '@scalar/hono-api-reference'
 import { Hono } from "hono";
@@ -201,12 +201,12 @@ app.get("/scalar-docs",Scalar((c)=>({
   layout:"modern",
 })))
 
-const server = serve({
-  fetch: app.fetch,
-  port: 4000,
-})
+// const server = serve({
+//   fetch: app.fetch,
+//   port: 4000,
+// })
 
-console.log(`Server is running on http://localhost:4000/api`)
+// console.log(`Server is running on http://localhost:4000/api`)
 
 export default handle(app);
 
