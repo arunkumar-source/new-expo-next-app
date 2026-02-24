@@ -1,6 +1,7 @@
 import { Redirect } from "expo-router";
 import { View, Text } from "react-native";
 import { useSession } from "@/lib/auth-client";
+import { types } from "@babel/core";
 
 export default function AuthIndex() {
   const { data: session, isPending } = useSession();

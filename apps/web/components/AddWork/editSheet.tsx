@@ -9,12 +9,37 @@ import {
   SheetTrigger,
 } from "@workspace/ui/components/sheet"
 import { Button } from "@workspace/ui/components/button"
-import {Input} from "@workspace/ui/components/input"
+import { Input } from "@workspace/ui/components/input"
 import { useForm } from "react-hook-form"
 import { $api } from "@/lib/api-client"
-import {type Work} from "@repo/shared"
-import { useEffect, useState } from "react"
+import { type Work } from "@repo/shared"
 import { useQueryClient } from "@tanstack/react-query"
+
+type FormValues = {
+  title: string
+  description: string
+  status: string
+  endDate?: string
+  endTime?: string
+}
+
+// ✅ Helper: Convert UTC → Local input format
+function formatDateForInputs(isoString?: string) {
+  if (!isoString) {
+    return { date: "", time: "" }
+  }
+
+  const local = new Date(isoString)
+
+  const date = local.toLocaleDateString("en-CA") // yyyy-mm-dd
+  const time = local.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  })
+
+  return { date, time }
+}
 
 export function EditWorkSheet({
   work,
@@ -24,84 +49,54 @@ export function EditWorkSheet({
   children: React.ReactNode
 }) {
   const queryClient = useQueryClient()
-  const { mutate: updateWork } = $api.useMutation("patch", "/api/update/{id}")
-  const [endTime, setEndTime] = useState("")
+  const { mutateAsync: updateWork } =
+    $api.useMutation("patch", "/api/update/{id}")
 
-  const { register, handleSubmit, formState,reset } = useForm({
-    defaultValues: {
-      title: work.title,
-      description: work.description,
-      status: work.status,
-      endDate: work.endDate ? work.endDate.split('T')[0] : "",
-      endTime: work.endDate && work.endDate.includes('T') ? work.endDate.split('T')[1]?.substring(0, 5) : "",
+  // ✅ Convert UTC → local for display
+  const { date, time } = formatDateForInputs(work.endDate)
+
+  const { register, handleSubmit, formState } = useForm<FormValues>({
+    values: {
+      title: work.title ?? "",
+      description: work.description ?? "",
+      status: work.status ?? "todo",
+      endDate: date,
+      endTime: time,
     },
   })
 
-  // Update form values when work prop changes
-  useEffect(() => {
-    const datePart = work.endDate ? work.endDate.split('T')[0] : ""
-    const timePart = work.endDate && work.endDate.includes('T') ? work.endDate.split('T')[1]?.substring(0, 5) : ""
-    
-    reset({
-      title: work.title,
-      description: work.description,
-      status: work.status,
-      endDate: datePart,
-      endTime: timePart,
-    })
-    if (timePart) {
-      setEndTime(timePart)
-    }
-    if (datePart) {
-      
-      if (!work.endDate || !work.endDate.includes('T')) {
-        setEndTime("")
-      }
-    }
-    
-  }, [work, reset])
-
   const onSubmit = handleSubmit(async (data) => {
-    try {
-      // Create proper Date object in local timezone
-      let finalEndDate: string | undefined
-      if (data.endDate && data.endTime) {
-        // Combine date and time to create a proper local datetime
-        const dateTimeString = `${data.endDate}T${data.endTime}:00`
-        const localDate = new Date(dateTimeString)
-        finalEndDate = localDate.toISOString()
-      } else {
-        finalEndDate = data.endDate || undefined
-      }
-      
-      const updates = {
-        title: data.title,
-        description: data.description,
-        status: data.status,
-        endDate: finalEndDate
-      }
+    let finalEndDate: string | undefined
 
-      await updateWork({
-                  params: {
-                    path: {
-                      id: work.id,
-                    },
-                  },
-                  body: {
-                    title: data.title,
-                    description: data.description,
-                    status: data.status,
-                    endDate: finalEndDate,
-                  },
-                }, {
-                  onSuccess: () => {
-                    queryClient.invalidateQueries({ queryKey: ["get", "/api"] })
-                  }
-                }
+    // ✅ Convert local → UTC before saving
+    if (data.endDate && data.endTime) {
+      const localDate = new Date(
+        `${data.endDate}T${data.endTime}:00`
       )
-    } catch (error) {
-      console.error("Error updating work:", error)
+      finalEndDate = localDate.toISOString()
+    } else if (data.endDate) {
+      const localDate = new Date(data.endDate)
+      finalEndDate = localDate.toISOString()
     }
+
+    await updateWork(
+      {
+        params: {
+          path: { id: work.id },
+        },
+        body: {
+          title: data.title,
+          description: data.description,
+          status: data.status as any,
+          endDate: finalEndDate,
+        },
+      },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ["get", "/api"] })
+        },
+      }
+    )
   })
 
   return (
@@ -111,68 +106,85 @@ export function EditWorkSheet({
       <SheetContent className="p-6">
         <SheetHeader>
           <SheetTitle>Edit Work</SheetTitle>
-          <SheetDescription>Update work item details</SheetDescription>
+          <SheetDescription>
+            Update work item details
+          </SheetDescription>
         </SheetHeader>
 
-        <form onSubmit={onSubmit} className="space-y-6 text-white mt-6">
+        <form
+          onSubmit={onSubmit}
+          className="space-y-6 text-white mt-6"
+        >
+          {/* Title */}
           <div>
-            <label className="block text-sm font-medium mb-1">Title</label>
-            <Input 
-             {...register("title", { 
+            <label className="block text-sm font-medium mb-1">
+              Title
+            </label>
+            <Input
+              {...register("title", {
                 required: "Title is required",
                 minLength: {
                   value: 3,
-                  message: "Title must be at least 3 characters long"
-                }
-             })} />
+                  message:
+                    "Title must be at least 3 characters long",
+                },
+              })}
+            />
             {formState.errors.title && (
-              <p className="text-red-500 text-sm mt-1">{formState.errors.title.message}</p>
+              <p className="text-red-500 text-sm mt-1">
+                {formState.errors.title.message}
+              </p>
             )}
           </div>
 
+          {/* Description */}
           <div>
-            <label className="block text-sm font-medium mb-1">Description</label>
-            <textarea 
-              {...register("description", { 
+            <label className="block text-sm font-medium mb-1">
+              Description
+            </label>
+            <textarea
+              {...register("description", {
                 required: "Description is required",
                 minLength: {
                   value: 10,
-                  message: "Description must be at least 10 characters long"
-                }
-              })} 
-              placeholder="Description" 
+                  message:
+                    "Description must be at least 10 characters long",
+                },
+              })}
               className="w-full p-2 border border-gray-300 rounded-md resize-none h-24 bg-black text-white"
             />
             {formState.errors.description && (
-              <p className="text-red-500 text-sm mt-1">{formState.errors.description.message}</p>
+              <p className="text-red-500 text-sm mt-1">
+                {formState.errors.description.message}
+              </p>
             )}
           </div>
 
+          {/* End Date & Time */}
           <div>
-            <label className="block text-sm font-medium mb-1">End Date (Optional)</label>
+            <label className="block text-sm font-medium mb-1">
+              End Date (Optional)
+            </label>
             <div className="space-y-2">
               <Input
                 type="date"
                 {...register("endDate")}
-                min={new Date().toISOString().split('T')[0]}
-                className="w-full bg-black text-white"
+                min={new Date().toISOString().split("T")[0]}
+                className="bg-black text-white"
               />
               <Input
                 type="time"
-                value={endTime}
                 {...register("endTime")}
-                onChange={(e) => {
-                  const newTime = e.target.value
-                  setEndTime(newTime)
-                  return newTime
-                }}
-                className="w-full bg-black text-white"
+                className="bg-black text-white"
               />
             </div>
           </div>
 
+          {/* Status */}
           <div>
-            <label className="block text-sm font-medium mb-1">Status</label>
+            <label className="block text-sm font-medium mb-1">
+              Status
+            </label>
             <select
               {...register("status")}
               className="w-full bg-black text-white border rounded-md p-2"

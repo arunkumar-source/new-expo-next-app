@@ -6,7 +6,8 @@
     "module": "es2022",
     "moduleResolution": "bundler",
     "moduleDetection": "auto",
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "typeRoots": ["node_modules/@types"]
   },
   "include": ["index.ts"],
   "exclude": ["node_modules", "dist"]
