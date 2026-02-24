@@ -1,25 +1,26 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { View, Text, TouchableOpacity, FlatList, Alert } from "react-native";
-import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import { $api } from "@/lib/api-client";
 import type { Work } from "@repo/shared";
 
 export default function WorkListScreen() {
   const router = useRouter();
-  
 
+  // Fetch works
   const worksQuery = $api.useQuery("get", "/api");
 
-  // Refresh data when screen comes into focus
-  useFocusEffect(
-    React.useCallback(() => {
+  // Delete mutation with automatic refresh
+  const deleteWork = $api.useMutation("delete", "/api/delete/{id}", {
+    onSuccess: () => {
+      // Refetch list automatically after delete
       worksQuery.refetch();
-    }, [])
-  );
-
-  // Delete work - use the generated type signature
-  const deleteWork = $api.useMutation("delete", "/api/delete/{id}");
+    },
+    onError: (err) => {
+      console.error("Delete error:", err);
+      Alert.alert("Error", "Failed to delete work");
+    },
+  });
 
   const handleDelete = (id: string) => {
     Alert.alert("Confirm Delete", "Are you sure?", [
@@ -27,31 +28,28 @@ export default function WorkListScreen() {
       {
         text: "Delete",
         style: "destructive",
-        onPress: async () => {
-          try {
-           await deleteWork.mutateAsync({ params: { path: { id } } });
-            worksQuery.refetch();
-          } catch (err) {
-            console.error("Delete error:", err);
-            Alert.alert("Error", "Failed to delete work");
-          }
+        onPress: () => {
+          deleteWork.mutate({
+            params: { path: { id } },
+          });
         },
       },
     ]);
   };
 
   const handleEdit = (work: Work) => {
-
     router.push({
       pathname: "/(tabs)/add-work",
-      params: { 
+      params: {
         editMode: "true",
         workId: work.id,
         title: work.title,
         description: work.description,
         status: work.status,
-        endDate: work.endDate ? new Date(work.endDate).toISOString().split('T')[0] : ""
-      }
+        endDate: work.endDate
+          ? new Date(work.endDate).toISOString().split("T")[0]
+          : "",
+      },
     });
   };
 
@@ -59,6 +57,14 @@ export default function WorkListScreen() {
     return (
       <View className="flex-1 justify-center items-center bg-gray-100">
         <Text className="text-gray-700">Loading...</Text>
+      </View>
+    );
+  }
+
+  if (worksQuery.isError) {
+    return (
+      <View className="flex-1 justify-center items-center bg-gray-100">
+        <Text className="text-red-500">Failed to load works</Text>
       </View>
     );
   }
@@ -77,12 +83,16 @@ export default function WorkListScreen() {
     <View className="bg-white p-4 mb-4 rounded-md shadow">
       <Text className="text-lg font-bold mb-1">{item.title}</Text>
       <Text className="text-gray-700 mb-2">{item.description}</Text>
-      <Text className="text-sm text-gray-500 mb-2">Status: {item.status}</Text>
+      <Text className="text-sm text-gray-500 mb-2">
+        Status: {item.status}
+      </Text>
+
       {item.endDate && (
         <Text className="text-sm text-gray-500 mb-2">
           Ends: {new Date(item.endDate).toLocaleString()}
         </Text>
       )}
+
       <View className="flex-row justify-end space-x-2">
         <TouchableOpacity
           onPress={() => handleEdit(item)}
@@ -90,6 +100,7 @@ export default function WorkListScreen() {
         >
           <Text className="text-white">Edit</Text>
         </TouchableOpacity>
+
         <TouchableOpacity
           onPress={() => handleDelete(item.id)}
           className="bg-red-500 px-3 py-1 rounded-md"
