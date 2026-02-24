@@ -10,7 +10,7 @@
     "generate:api": "openapi-typescript http://localhost:4000/api/openapi -o packages/shared/types/api.ts"
   },
   "devDependencies": {
-    "@types/minimatch": "^6.0.0",
+  
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
     "prettier": "^3.8.1",
